@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <!-- Google Fonts for Modern App-like Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f6f9;
+            color: #333333;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        h2 {
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: -0.5px;
+        }
+        h4 {
+            font-weight: 600;
+            color: #334155;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            border-color: #4338ca;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            padding: 10px 14px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .table {
+            vertical-align: middle;
+        }
+        .badge {
+            padding: 6px 12px;
+            font-weight: 500;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5 mb-5" style="max-width: 950px;">
+        <h2 class="text-center mb-4">Job Application and Interview Pipeline Tracker</h2>
+
+        <!-- 1. Add New Application (Top) -->
+        <div class="card p-4 mb-4">
+            <h4 class="mb-3">Add New Application</h4>
+            <form method="POST" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="company" class="form-control" placeholder="Company Name" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="role" class="form-control" placeholder="Job Role" required>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select" required>
+                        <option value="" disabled selected>Status</option>
+                        <option value="Applied">Applied</option>
+                        <option value="Interviewing">Interviewing</option>
+                        <option value="Offer">Offer</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="date_applied" class="form-control" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 py-2">Add Job</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2. Status Analytics (Middle) -->
+        <div class="card p-4 mb-4">
+            <h4 class="mb-3">Status Analytics</h4>
+            <div style="position: relative; height: 260px; width: 100%;">
+                <canvas id="jobChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Applications List (Bottom) -->
+        <div class="card p-4 mb-4">
+            <h4 class="mb-3">Applications List</h4>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr class="text-secondary">
+                            <th>Company</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                        <tr>
+                            <td class="fw-semibold text-dark">{{ job.company }}</td>
+                            <td>{{ job.role }}</td>
+                            <td>
+                                {% if job.status == 'Applied' %}
+                                    <span class="badge bg-indigo text-white" style="background-color: #6366f1;">Applied</span>
+                                {% elif job.status == 'Interviewing' %}
+                                    <span class="badge bg-amber text-dark" style="background-color: #fbbf24;">Interviewing</span>
+                                {% elif job.status == 'Offer' %}
+                                    <span class="badge bg-emerald text-white" style="background-color: #10b981;">Offer</span>
+                                {% else %}
+                                    <span class="badge bg-rose text-white" style="background-color: #f43f5e;">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ job.date_applied }}</td>
+                            <td>
+                                <a href="/edit/{{ job.id }}" class="btn btn-outline-warning btn-sm px-3 me-1">Edit</a>
+                                <a href="/delete/{{ job.id }}" class="btn btn-outline-danger btn-sm px-3">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('jobChart').getContext('2d');
+        const jobChart = new Chart(ctx, {
+            type: 'doughnut', // Modern looking doughnut chart variant
+            data: {
+                labels: {{ labels | tojson }},
+                datasets: [{
+                    data: {{ data | tojson }},
+                    backgroundColor: ['#6366f1', '#fbbf24', '#10b981', '#f43f5e'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: 'Poppins',
+                                size: 12
+                            },
+                            padding: 20
+                        }
+                    }
+                },
+                cutout: '65%' // Makes it a sleek modern doughnut chart
+            }
+        });
+    </script>
+</body>
+</html>
